@@ -1,5 +1,4 @@
 /* eslint-disable function-paren-newline */
-/* eslint-disable jsx-a11y/accessible-emoji */
 import React, { useState } from 'react';
 import './App.scss';
 
@@ -26,19 +25,28 @@ export const App = () => {
   const [products, setProducts] = useState(fullProductInfo);
   const [user, setUser] = useState(0);
   const [input, setInput] = useState('');
+  const [sortColumn, setSortColumn] = useState(null);
+  const [sortDirection, setSortDirection] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState([]);
 
-  const filterProducts = (userId, searchText) => {
+  const filterProducts = (userId, searchText, categories) => {
     let filteredProducts = fullProductInfo;
 
     if (userId !== 0) {
       filteredProducts = filteredProducts.filter(
-        product => product.user.id === userId,
+        curProduct => curProduct.user.id === userId,
+      );
+    }
+
+    if (categories.length > 0) {
+      filteredProducts = filteredProducts.filter(curProduct =>
+        categories.includes(curProduct.category.id),
       );
     }
 
     if (searchText) {
-      filteredProducts = filteredProducts.filter(product =>
-        product.name.toLowerCase().includes(searchText),
+      filteredProducts = filteredProducts.filter(curProduct =>
+        curProduct.name.toLowerCase().includes(searchText.toLowerCase()),
       );
     }
 
@@ -47,25 +55,83 @@ export const App = () => {
 
   const onInputChange = str => {
     setInput(str.toLowerCase());
-    filterProducts(user, str.toLowerCase());
+    filterProducts(user, str.toLowerCase(), selectedCategories);
   };
 
-  const onUserClick = id => {
-    setUser(id);
-    filterProducts(id, input);
+  const onUserClick = ids => {
+    setUser(ids);
+    filterProducts(ids, input, selectedCategories);
   };
 
   const reset = () => {
     setInput('');
     setUser(0);
+    setSelectedCategories([]);
     setProducts(fullProductInfo);
   };
 
-  const functions = {
-    onUserClick,
-    onInputChange,
-    reset,
+  const toggleCategory = categoryId => {
+    const updatedCategories = selectedCategories.includes(categoryId)
+      ? selectedCategories.filter(id => id !== categoryId)
+      : [...selectedCategories, categoryId];
+
+    setSelectedCategories(updatedCategories);
+    filterProducts(user, input, updatedCategories);
   };
+
+  const clearCategories = () => {
+    setSelectedCategories([]);
+    filterProducts(user, input, []);
+  };
+
+  const handleSort = column => {
+    if (sortColumn === column) {
+      if (sortDirection === '') {
+        setSortDirection('asc');
+      } else if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else {
+        setSortDirection('');
+      }
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedProducts = React.useMemo(() => {
+    const sorted = [...products];
+
+    if (sortColumn) {
+      sorted.sort((a, b) => {
+        let valueA = a;
+        let valueB = b;
+
+        if (sortColumn === 'category') {
+          valueA = a.category.title;
+          valueB = b.category.title;
+        } else if (sortColumn === 'user') {
+          valueA = a.user.name;
+          valueB = b.user.name;
+        } else {
+          valueA = a[sortColumn];
+          valueB = b[sortColumn];
+        }
+
+        if (sortDirection === 'asc') {
+          return valueA > valueB ? 1 : -1;
+        }
+
+        if (sortDirection === 'desc') {
+          return valueA < valueB ? 1 : -1;
+        }
+
+        return 0;
+      });
+    }
+
+    return sorted;
+  }, [products, sortColumn, sortDirection]);
 
   return (
     <div className="section">
@@ -74,11 +140,16 @@ export const App = () => {
 
         <div className="block">
           <Panel
-            products={products}
             user={user}
-            users={usersFromServer}
-            functions={functions}
             input={input}
+            users={usersFromServer}
+            categories={categoriesFromServer}
+            selectedCategories={selectedCategories}
+            onInputChange={onInputChange}
+            onUserClick={onUserClick}
+            reset={reset}
+            toggleCategory={toggleCategory}
+            clearCategories={clearCategories}
           />
         </div>
 
@@ -88,7 +159,12 @@ export const App = () => {
               No products matching selected criteria
             </p>
           ) : (
-            <Products products={products} />
+            <Products
+              products={sortedProducts}
+              handleSort={handleSort}
+              sortColumn={sortColumn}
+              sortDirection={sortDirection}
+            />
           )}
         </div>
       </div>

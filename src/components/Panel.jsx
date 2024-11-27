@@ -1,22 +1,29 @@
 import React from 'react';
 import { UserFiltr } from './Panel/UserFiltr';
 
-export const Panel = ({ users, user, functions, input }) => {
+export const Panel = ({
+  user,
+  input,
+  users,
+  categories,
+  selectedCategories,
+  onInputChange,
+  onUserClick,
+  reset,
+  toggleCategory,
+  clearCategories,
+}) => {
   return (
     <nav className="panel">
       <p className="panel-heading">Filters</p>
 
-      <UserFiltr
-        users={users}
-        acitveUser={user}
-        onUserClick={functions.onUserClick}
-      />
+      <UserFiltr users={users} acitveUser={user} onUserClick={onUserClick} />
 
       <div className="panel-block">
         <p className="control has-icons-left has-icons-right">
           <input
             value={input}
-            onChange={e => functions.onInputChange(e.target.value)}
+            onChange={e => onInputChange(e.target.value)}
             data-cy="SearchField"
             type="text"
             className="input"
@@ -33,7 +40,7 @@ export const Panel = ({ users, user, functions, input }) => {
                 data-cy="ClearButton"
                 type="button"
                 className="delete"
-                onClick={() => functions.onInputChange('')}
+                onClick={() => onInputChange('')}
               />
             </span>
           )}
@@ -44,31 +51,37 @@ export const Panel = ({ users, user, functions, input }) => {
         <a
           href="#/"
           data-cy="AllCategories"
-          className="button is-success mr-6 is-outlined"
+          className={`button mr-6 ${selectedCategories.length === 0 ? 'is-info' : 'is-outlined'}`}
+          onClick={e => {
+            e.preventDefault();
+            clearCategories();
+          }}
         >
           All
         </a>
 
-        <a data-cy="Category" className="button mr-2 my-1 is-info" href="#/">
-          Category 1
-        </a>
-
-        <a data-cy="Category" className="button mr-2 my-1" href="#/">
-          Category 2
-        </a>
-
-        <a data-cy="Category" className="button mr-2 my-1 is-info" href="#/">
-          Category 3
-        </a>
-        <a data-cy="Category" className="button mr-2 my-1" href="#/">
-          Category 4
-        </a>
+        {categories.map(category => (
+          <a
+            key={category.id}
+            data-cy="Category"
+            className={`button mr-2 my-1 ${
+              selectedCategories.includes(category.id) ? 'is-info' : ''
+            }`}
+            href="#/"
+            onClick={e => {
+              e.preventDefault();
+              toggleCategory(category.id);
+            }}
+          >
+            {category.title}
+          </a>
+        ))}
       </div>
 
       <div className="panel-block">
         <a
           data-cy="ResetAllButton"
-          onClick={functions.reset}
+          onClick={reset}
           href="#/"
           className="button is-link is-outlined is-fullwidth"
         >
